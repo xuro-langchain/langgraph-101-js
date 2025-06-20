@@ -6,6 +6,7 @@ We'll start with a simple RAG Graph, and add to it gradually to make it more com
 ## Module 1: Simple RAG
 
 This module is the ```rag-agents/simple-rag.ts``` file. It covers the basics of LangGraph, including State, Edges, and Nodes. The diagram of the agent is
+
 ![Architecture](../images/simple_rag.png)
 
 ## Module 2: Corrective RAG

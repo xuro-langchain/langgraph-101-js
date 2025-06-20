@@ -90,5 +90,5 @@ async function main() {
   }
 }
 
-// Uncomment to run
+// Uncomment to run, use command: npx tsx multi-agent/assistant-agent.ts
 // main(); 

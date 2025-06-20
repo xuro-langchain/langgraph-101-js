@@ -304,5 +304,5 @@ async function main() {
   }
 }
 
-// Uncomment to run
+// Uncomment to run, use command: npx tsx multi-agent/music-subagent.ts
 // main(); 

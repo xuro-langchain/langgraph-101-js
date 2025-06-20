@@ -4,6 +4,8 @@ In this module, we'll utilize LangGraph to create complex agents using a supervi
 
 At the end, we'll have created a customer assistant that serves a digital music store!
 
+Each module below can be run with the command npx tsx multi-agent/<module-name>.ts
+
 ## Module 1: Music ReAct Agent
 
 This module is the ```multi-agent/music-subagent.ts``` file. It covers how to manually create a ReAct agent, including setting up tools, prompts and nodes. Our Music ReAct agent will handle all customer queries related to songs. The architecture diagram looks like

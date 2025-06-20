@@ -163,5 +163,5 @@ async function main() {
   }
 }
 
-// Uncomment to run
-main(); 
+// Uncomment to run, use command: npx tsx multi-agent/invoice-subagent.ts
+// main(); 

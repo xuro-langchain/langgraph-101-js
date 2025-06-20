@@ -44,7 +44,7 @@ Based on the existing steps that have been taken in the messages, your role is t
 This could be one step in an inquiry that needs multiple sub-agent calls.`;
 
 // Define the state using Annotation
-const State = Annotation.Root({
+export const State = Annotation.Root({
   messages: Annotation<BaseMessage[]>({
     reducer: (currentState, updateValue) => [...(currentState || []), ...updateValue],
     default: () => [],
@@ -66,7 +66,7 @@ const State = Annotation.Root({
 type GraphState = typeof State.State;
 
 // Create supervisor workflow
-const supervisorPrebuiltWorkflow = createSupervisor({
+export const supervisorPrebuiltWorkflow = createSupervisor({
   agents: [invoiceAgent, musicAgent],
   outputMode: "last_message", // alternative is full_history
   llm: llm,
@@ -92,7 +92,7 @@ const UserInputSchema = z.object({
 });
 
 // Helper function to get customer ID from identifier
-async function getCustomerIdFromIdentifier(identifier: string): Promise<string | null> {
+export async function getCustomerIdFromIdentifier(identifier: string): Promise<string | null> {
   const dbInstance = await initializeDb();
   
   if (/^\d+$/.test(identifier)) {
@@ -114,7 +114,7 @@ async function getCustomerIdFromIdentifier(identifier: string): Promise<string |
 }
 
 // Node: Verify customer information
-async function verifyInfo(state: GraphState): Promise<Partial<GraphState>> {
+export async function verifyInfo(state: GraphState): Promise<Partial<GraphState>> {
   if (state.customer_id === null) {
     const systemInstructions = `You are a music store agent, where you are trying to verify the customer identity 
     as the first step of the customer support process. 
@@ -167,14 +167,14 @@ async function verifyInfo(state: GraphState): Promise<Partial<GraphState>> {
 }
 
 // Node: Human input (interrupt point)
-async function humanInput(state: GraphState): Promise<Partial<GraphState>> {
+export async function humanInput(state: GraphState): Promise<Partial<GraphState>> {
   // Use the interrupt mechanism to ask for customer information
   const userInput = await interrupt("Please provide your customer information (ID, email, or phone number).");
   return { messages: [userInput] };
 }
 
 // Conditional edge: should interrupt
-function shouldInterrupt(state: GraphState): string {
+export function shouldInterrupt(state: GraphState): string {
   if (state.customer_id !== null) {
     return "continue";
   } else {
@@ -183,27 +183,27 @@ function shouldInterrupt(state: GraphState): string {
 }
 
 // Compile supervisor
-const supervisorPrebuilt = supervisorPrebuiltWorkflow.compile({ name: "music_catalog_subagent" });
+export const supervisorPrebuilt = supervisorPrebuiltWorkflow.compile({ name: "music_catalog_subagent" });
 
 // Build the multi-agent verification workflow
 const multiAgentVerify = new StateGraph(State);
 
 // Add nodes
 multiAgentVerify
-  .addNode("verify_info", verifyInfo)
-  .addNode("human_input", humanInput)
-  .addNode("supervisor", supervisorPrebuilt)
-  .addEdge("__start__", "verify_info")
-  .addConditionalEdges(
-    "verify_info",
-    shouldInterrupt,
-    {
-      "continue": "supervisor",
-      "interrupt": "human_input",
-    }
-  )
-  .addEdge("human_input", "verify_info")
-  .addEdge("supervisor", "__end__");
+.addNode("verify_info", verifyInfo)
+.addNode("human_input", humanInput)
+.addNode("supervisor", supervisorPrebuilt)
+.addEdge("__start__", "verify_info")
+.addConditionalEdges(
+  "verify_info",
+  shouldInterrupt,
+  {
+    "continue": "supervisor",
+    "interrupt": "human_input",
+  }
+)
+.addEdge("human_input", "verify_info")
+.addEdge("supervisor", "__end__");
 
 // Add memory support for checkpointer
 const memory = new MemorySaver();
@@ -248,5 +248,5 @@ async function main() {
 
 }
 
-// Uncomment to run
-main(); 
+// Uncomment to run, use command: npx tsx multi-agent/hil-assistant.ts
+// main(); 

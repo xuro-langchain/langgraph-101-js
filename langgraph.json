@@ -1,0 +1,16 @@
+{
+    "dockerfile_lines": [],
+    "graphs": {
+      "Simple RAG": "./agents/simple_rag.ts:graph",
+      "Corrective RAG": "./agents/corrective_rag.ts:graph",
+      "RAG with Memory and HIL": "./agents/memory_hil_rag.ts:graph",
+      "Music Catalog Subagent": "./agents/music_agent.ts:graph",
+      "Invoice Subagent": "./agents/invoice_agent.ts:graph",
+      "Store Supervisor": "./agents/music_store_supervisor.ts:graph",
+      "Store Supervisor with Verification": "./agents/music_store_supervisor_with_interrupt.ts:graph"
+    },
+    "env": ".env",
+    "dependencies": [
+      "."
+    ]
+  }

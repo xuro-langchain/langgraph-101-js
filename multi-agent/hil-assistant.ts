@@ -1,5 +1,4 @@
-import { graph as invoiceAgent } from './invoice-subagent';
-import { graph as musicAgent } from './music-subagent';
+import { supervisorPrebuiltWorkflow, GraphState, SupervisorState } from './assistant-agent';
 import { llm, getEngineForChinookDb, queryChinookDb } from './utils';
 import { StateGraph, Annotation, Command } from '@langchain/langgraph';
 import { interrupt } from "@langchain/langgraph";
@@ -29,50 +28,6 @@ async function initializeDb() {
   return db;
 }
 
-const supervisorPrompt = `You are an expert customer support assistant for a digital music store. 
-You are dedicated to providing exceptional service and ensuring customer queries are answered thoroughly. 
-You have a team of subagents that you can use to help answer queries from customers. 
-Your primary role is to serve as a supervisor/planner for this multi-agent team that helps answer queries from customers. 
-
-Your team is composed of two subagents that you can use to help answer the customer's request:
-1. music_catalog_information_subagent: this subagent has access to user's saved music preferences. It can also retrieve information about the digital music store's music 
-catalog (albums, tracks, songs, etc.) from the database. 
-3. invoice_information_subagent: this subagent is able to retrieve information about a customer's past purchases or invoices 
-from the database. 
-
-Based on the existing steps that have been taken in the messages, your role is to generate the next subagent that needs to be called. 
-This could be one step in an inquiry that needs multiple sub-agent calls.`;
-
-// Define the state using Annotation
-export const State = Annotation.Root({
-  messages: Annotation<BaseMessage[]>({
-    reducer: (currentState, updateValue) => [...(currentState || []), ...updateValue],
-    default: () => [],
-  }),
-  customer_id: Annotation<string | null>({
-    reducer: (currentState, updateValue) => updateValue as string | null,
-    default: () => null,
-  }),
-  loaded_memory: Annotation<string | null>({
-    reducer: (currentState, updateValue) => updateValue,
-    default: () => null,
-  }),
-  remaining_steps: Annotation<any>({
-    reducer: (currentState, updateValue) => updateValue,
-    default: () => null,
-  }),
-});
-
-type GraphState = typeof State.State;
-
-// Create supervisor workflow
-export const supervisorPrebuiltWorkflow = createSupervisor({
-  agents: [invoiceAgent, musicAgent],
-  outputMode: "last_message", // alternative is full_history
-  llm: llm,
-  prompt: supervisorPrompt,
-  stateSchema: State,
-});
 
 // ------------------------------------------------------------------------------------------------------------
 // New: Human In the Loop Nodes -------------------------------------------------------------
@@ -183,10 +138,10 @@ export function shouldInterrupt(state: GraphState): string {
 }
 
 // Compile supervisor
-export const supervisorPrebuilt = supervisorPrebuiltWorkflow.compile({ name: "music_catalog_subagent" });
+export const supervisorPrebuilt = supervisorPrebuiltWorkflow.compile({ name: "multi-agent-entry" });
 
 // Build the multi-agent verification workflow
-const multiAgentVerify = new StateGraph(State);
+const multiAgentVerify = new StateGraph(SupervisorState);
 
 // Add nodes
 multiAgentVerify

@@ -1,6 +1,7 @@
 import { graph as invoiceAgent } from './invoice-subagent';
 import { graph as musicAgent } from './music-subagent';
 import { llm } from './utils';
+import { v4 as uuidv4 } from 'uuid';
 import { StateGraph, Annotation } from '@langchain/langgraph';
 import { HumanMessage, SystemMessage, AIMessage, BaseMessage } from '@langchain/core/messages';
 import { createSupervisor } from "@langchain/langgraph-supervisor";
@@ -37,10 +38,45 @@ from the database.
 Based on the existing steps that have been taken in the messages, your role is to generate the next subagent that needs to be called. 
 This could be one step in an inquiry that needs multiple sub-agent calls.`;
 
+// Helper reducer to combine and deduplicate messages when using supervisor
+function addMessages(left: BaseMessage[], right: BaseMessage[]): BaseMessage[] {
+  let leftCopy = Array.isArray(left) ? left.slice() : [left];
+  let rightCopy = Array.isArray(right) ? right.slice() : [right];
+
+  // Assign missing ids
+  leftCopy.forEach(m => {
+      if (!m.id) {
+          m.id = uuidv4();
+      }
+  });
+  rightCopy.forEach(m => {
+      if (!m.id) {
+          m.id = uuidv4();
+      }
+  });
+
+  let leftIdxById: Record<string, number> = {};
+  leftCopy.forEach((m, i) => {
+      leftIdxById[m.id!] = i;
+  });
+
+  let merged = leftCopy.slice();
+  rightCopy.forEach(m => {
+      let existingIdx = leftIdxById[m.id!];
+      if (existingIdx !== undefined) {
+          merged[existingIdx] = m;
+      } else {
+          merged.push(m);
+      }
+  });
+
+  return merged;
+}
+
 // Define the state using Annotation
-const SupervisorState = Annotation.Root({
+export const SupervisorState = Annotation.Root({
   messages: Annotation<BaseMessage[]>({
-    reducer: (currentState, updateValue) => [...(currentState || []), ...updateValue],
+    reducer: addMessages,
     default: () => [],
   }),
   customer_id: Annotation<string | null>({
@@ -60,7 +96,7 @@ const SupervisorState = Annotation.Root({
 // --------------------------------------------------------------------------------
 // New: Create supervisor workflow using prebuilt --------------------------------- 
 // --------------------------------------------------------------------------------
-const supervisorPrebuiltWorkflow = createSupervisor({
+export const supervisorPrebuiltWorkflow = createSupervisor({
   agents: [invoiceAgent, musicAgent],
   outputMode: "last_message", // alternative is full_history
   llm: llm,
@@ -69,22 +105,31 @@ const supervisorPrebuiltWorkflow = createSupervisor({
 });
 
 export const graph = supervisorPrebuiltWorkflow.compile();
+export type GraphState = typeof SupervisorState.State;
 
 // Example usage
 async function main() {
-  const question = "I need help with my recent invoice and also want to find some rock music";
+  const question = "My customer ID is 1. How much was my most recent purchase? What albums do you have by U2";
   const stream = await graph.stream({ messages: [new HumanMessage(question)] });
   for await (const chunk of stream) {
     const nodeName = Object.keys(chunk)[0];
     const nodeData = chunk[nodeName as keyof typeof chunk];
     
     if (nodeData && typeof nodeData === 'object' && 'messages' in nodeData && Array.isArray(nodeData.messages)) {
-      const lastMessage = nodeData.messages[nodeData.messages.length - 1];
       console.log(`\n--- ${nodeName} ---`);
-      console.log(`Content: ${lastMessage.content}`);
       
-      if ('tool_calls' in lastMessage && Array.isArray(lastMessage.tool_calls) && lastMessage.tool_calls.length > 0) {
-        console.log(`Tool calls: ${lastMessage.tool_calls.map((tc: any) => tc.name).join(', ')}`);
+      // Print all messages in this chunk
+      for (const message of nodeData.messages) {
+        if (message.getType() === 'tool') {
+          console.log(`Tool Result: ${message.content}`);
+        } else if (message.getType() === 'ai') {
+          console.log(`AI Response: ${message.content}`);
+          if ('tool_calls' in message && Array.isArray(message.tool_calls) && message.tool_calls.length > 0) {
+            console.log(`Tool calls: ${message.tool_calls.map((tc: any) => tc.name).join(', ')}`);
+          }
+        } else if (message.getType() === 'human') {
+          console.log(`Human Input: ${message.content}`);
+        }
       }
     }
   }

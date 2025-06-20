@@ -28,7 +28,7 @@ export function getEngineForChinookDb(): Promise<sqlite3.Database> {
               console.error('Error loading Chinook database:', err);
               reject(err);
             } else {
-              console.log('Chinook database loaded successfully');
+              // console.log('Chinook database loaded successfully');
               resolve(db);
             }
           });

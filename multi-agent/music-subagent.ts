@@ -282,7 +282,7 @@ musicWorkflow
 )
 .addEdge("music_tool_node", "music_assistant");
 
-export const graph = musicWorkflow.compile({ name: "music_catalog_information_subagent" });
+export const graph = musicWorkflow.compile({ name: "music_catalog_subagent" });
 
 // Example usage
 async function main() {

@@ -11,9 +11,10 @@ import {
   verifyInfo, 
   humanInput, 
   shouldInterrupt, 
-  State as AssistantState,
   supervisorPrebuilt
 } from './hil-assistant';
+
+import { SupervisorState as AssistantState } from './assistant-agent';
 
 /* READ
 Now that we have created an agent workflow that includes verification and execution, 
@@ -169,7 +170,7 @@ multiAgentMemory
 const memory = new MemorySaver();
 export const graph = multiAgentMemory.compile({ 
   name: "multi_agent_memory", 
-  checkpointer: memory 
+  checkpointer: memory,
 });
 
 // --- Example usage ---
@@ -187,12 +188,20 @@ async function main() {
     const nodeData = chunk[nodeName as keyof typeof chunk];
     
     if (nodeData && typeof nodeData === 'object' && 'messages' in nodeData && Array.isArray(nodeData.messages)) {
-      const lastMessage = nodeData.messages[nodeData.messages.length - 1];
       console.log(`\n--- ${nodeName} ---`);
-      console.log(`Content: ${lastMessage.content}`);
       
-      if ('tool_calls' in lastMessage && Array.isArray(lastMessage.tool_calls) && lastMessage.tool_calls.length > 0) {
-        console.log(`Tool calls: ${lastMessage.tool_calls.map((tc: any) => tc.name).join(', ')}`);
+      // Print all messages in this chunk
+      for (const message of nodeData.messages) {
+        if (message.getType() === 'tool') {
+          console.log(`Tool Result: ${message.content}`);
+        } else if (message.getType() === 'ai') {
+          console.log(`AI Response: ${message.content}`);
+          if ('tool_calls' in message && Array.isArray(message.tool_calls) && message.tool_calls.length > 0) {
+            console.log(`Tool calls: ${message.tool_calls.map((tc: any) => tc.name).join(', ')}`);
+          }
+        } else if (message.getType() === 'human') {
+          console.log(`Human Input: ${message.content}`);
+        }
       }
     }
   }
@@ -210,4 +219,4 @@ async function main() {
 }
 
 // Uncomment to run, use command: npx tsx multi-agent/memory-assistant.ts
-main();
+// main();

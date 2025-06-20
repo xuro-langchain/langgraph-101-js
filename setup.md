@@ -3,19 +3,11 @@ Follow these instructions to get ready for your upcoming session!
 
 If you run into issues with setting up the python environment or acquiring the necessary API keys due to any resrictions (ex. corporate policy), contact your LangChain representative and we'll find a work-around!
 
-### Create an environment and install dependencies  
+### Install dependencies 
 ```
-# Ensure you have a recent version of pip and python installed
-$ cd langgraph-101
-$ python3 -m venv venv
-$ source venv/bin/activate
-$ pip install -r requirements.txt
-```
-
-### Running notebooks
-Make sure the following command works and opens the relevant notebooks
-```
-$ jupyter notebook
+# Ensure you have a recent version of node installed
+$ cd langgraph-101-js
+$ npm install
 ```
 
 ### Set OpenAI API key
